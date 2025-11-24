@@ -2,7 +2,8 @@
 
 > A high-fidelity, real-time visualization of India's electricity grid, featuring flow-tracing animations, carbon intensity tracking, and generation mix analysis.
 
-![Dashboard Preview]([https://arvind-55555.github.io/India-Energy-Monitor/])
+## Live Demo
+[![View Artifact](https://img.shields.io/badge/View%20Artifact-%230077B5.svg?style=for-the-badge&logo=claude&logoColor=white)](https://arvind-55555.github.io/India-Energy-Monitor/)
 
 ## Overview
 
