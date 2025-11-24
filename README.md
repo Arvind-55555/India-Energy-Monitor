@@ -1,9 +1,6 @@
 # India Energy Monitor
 
-> A high-fidelity, real-time visualization of India's electricity grid, featuring flow-tracing animations, carbon intensity tracking, and generation mix analysis.
-
-## Live Demo
-[![View Artifact](https://img.shields.io/badge/View%20Artifact-%230077B5.svg?style=for-the-badge&logo=claude&logoColor=white)](https://arvind-55555.github.io/India-Energy-Monitor/)
+A high-fidelity, real-time visualization of India's electricity grid, featuring flow-tracing animations, carbon intensity tracking, and generation mix analysis.
 
 ## Overview
 
@@ -15,7 +12,10 @@ It solves the problem of abstract energy data by visualizing:
 3.  **Time Travel:** Toggle between Live (24H), Monthly (30D), and Yearly (5Y) trends.
 
 ---
+## Live Demo
+[![View Artifact](https://img.shields.io/badge/View%20Artifact-%230077B5.svg?style=for-the-badge&logo=claude&logoColor=white)](https://arvind-55555.github.io/India-Energy-Monitor/)
 
+---
 ## Key Features
 
 *   **Real-Time Power Balance:** Visualizes the flow of energy from Source (Gen) → Grid (Net Load) → Sink (Export).
