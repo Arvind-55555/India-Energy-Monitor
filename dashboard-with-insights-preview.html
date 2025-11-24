@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>India Energy Dashboard | Live Control Room</title>
+
+    <!-- 1. TAILWIND CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 2. CHART.JS (FIXED: Uses UMD build for browser compatibility) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- 3. ICONS -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --panel-glass: rgba(30, 41, 59, 0.7);
+        }
+
+        body {
+            background-color: #020617;
+            color: #e2e8f0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            /* Subtle Mesh Gradient Background */
+            background-image:
+                radial-gradient(circle at 15% 50%, rgba(14, 165, 233, 0.08) 0%, transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(234, 179, 8, 0.05) 0%, transparent 25%);
+        }
+
+        /* Glassmorphism Panel */
+        .glass-panel {
+            background: var(--panel-glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Active Button State */
+        .btn-active {
+            background: rgba(14, 165, 233, 0.2);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.1);
+        }
+
+        /* Animated Flow Line (CSS) */
+        .flow-path {
+            stroke-dasharray: 10;
+            animation: flowAnimation 1.5s linear infinite;
+        }
+
+        @keyframes flowAnimation {
+            to {
+                stroke-dashoffset: -20;
+            }
+        }
+
+        /* Pulse animation for insights */
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(14, 165, 233, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 30px rgba(14, 165, 233, 0.4);
+            }
+        }
+
+        .insight-card:hover {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen p-4 md:p-8">
+
+    <!-- HEADER -->
+    <header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
+        <div class="flex items-center gap-4">
+            <div class="relative group">
+                <div
+                    class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-[0_0_20px_rgba(14,165,233,0.3)] group-hover:shadow-[0_0_30px_rgba(14,165,233,0.5)] transition-all">
+                    <i data-lucide="zap" class="text-white w-6 h-6"></i>
+                </div>
+                <!-- Status Dot -->
+                <div
+                    class="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-[#020617] animate-pulse">
+                </div>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-white tracking-tight">National Energy Monitor</h1>
+                <div class="flex items-center gap-2 mt-1">
+                    <span
+                        class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-800 text-gray-400 border border-gray-700">ZONE:
+                        IN</span>
+                    <p class="text-xs text-gray-500 font-mono">LIVE FEED • UPDATED <span id="last-updated">--:--</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TIME CONTROLS -->
+        <div class="flex bg-[#1e293b] p-1 rounded-xl border border-gray-700/50">
+            <button onclick="updateDashboard('24H')" id="btn-24H"
+                class="px-4 py-2 rounded-lg text-xs font-bold transition-all btn-active">24H</button>
+            <button onclick="updateDashboard('30D')" id="btn-30D"
+                class="px-4 py-2 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition-all">30D</button>
+            <button onclick="updateDashboard('5Y')" id="btn-5Y"
+                class="px-4 py-2 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition-all">5Y</button>
+        </div>
+    </header>
+
+    <!-- MAIN GRID -->
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT COLUMN (Metrics) -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+
+            <!-- Carbon Intensity Card -->
+            <div class="glass-panel rounded-2xl p-6 relative overflow-hidden">
+                <!-- Background Glow -->
+                <div
+                    class="absolute -right-6 -top-6 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl pointer-events-none">
+                </div>
+
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Carbon Intensity</h3>
+                    <span
+                        class="bg-orange-500/10 border border-orange-500/20 text-orange-400 px-2 py-0.5 rounded text-[10px] font-bold">HIGH</span>
+                </div>
+
+                <div class="flex items-baseline gap-2 mb-4">
+                    <span class="text-5xl font-bold text-white tracking-tighter" id="val-intensity">--</span>
+                    <span class="text-sm text-gray-400">gCO₂/kWh</span>
+                </div>
+
+                <!-- Gradient Bar -->
+                <div class="h-3 bg-gray-800 rounded-full overflow-hidden relative">
+                    <div id="bar-intensity"
+                        class="h-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-600 w-[0%] transition-all duration-1000">
+                    </div>
+                </div>
+                <div class="flex justify-between text-[10px] text-gray-500 mt-2 font-mono">
+                    <span>0</span>
+                    <span>450</span>
+                    <span>900+</span>
+                </div>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="glass-panel rounded-2xl p-4 border-l-2 border-green-500">
+                    <h4 class="text-gray-400 text-[10px] font-bold uppercase">Low Carbon</h4>
+                    <div class="text-2xl font-bold text-white mt-1" id="val-lowcarbon">--%</div>
+                    <div class="text-[10px] text-gray-500 mt-1">Target: 40%</div>
+                </div>
+                <div class="glass-panel rounded-2xl p-4 border-l-2 border-blue-500">
+                    <h4 class="text-gray-400 text-[10px] font-bold uppercase">Renewable</h4>
+                    <div class="text-2xl font-bold text-white mt-1" id="val-renewable">--%</div>
+                    <div class="text-[10px] text-gray-500 mt-1">Solar / Wind / Hydro</div>
+                </div>
+            </div>
+
+            <!-- Mix Donut Chart -->
+            <div class="glass-panel rounded-2xl p-6 flex flex-col items-center justify-center flex-grow">
+                <h3 class="w-full text-left text-gray-400 text-[10px] font-bold uppercase mb-4">Power Mix</h3>
+
+                <!-- Explicit Height Container for Chart.js -->
+                <div class="relative w-[200px] h-[200px]">
+                    <canvas id="mixChart"></canvas>
+                    <!-- Center Text -->
+                    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <span class="text-2xl font-bold text-white" id="center-val">--%</span>
+                        <span class="text-[10px] text-gray-500 uppercase tracking-widest">Fossil</span>
+                    </div>
+                </div>
+
+                <!-- Custom Legend -->
+                <div class="grid grid-cols-3 gap-x-4 gap-y-2 mt-6 text-[10px] text-gray-400 w-full">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-[#78350f]"></div>Coal
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-[#eab308]"></div>Solar
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-[#0ea5e9]"></div>Wind
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-[#1d4ed8]"></div>Hydro
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-[#22c55e]"></div>Nuc
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-[#94a3b8]"></div>Gas
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN (Flow & History) -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+
+            <!-- Flow Animation Box: POWER BALANCE VISUALIZATION -->
+            <div class="glass-panel rounded-2xl p-6 relative">
+
+                <!-- Header -->
+                <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-2">
+                    <div>
+                        <h3 class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Real-Time Power
+                            Balance</h3>
+                        <p class="text-[10px] text-gray-500">Supply vs Demand Dynamics</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <!-- Simulated Grid Frequency -->
+                        <div class="text-right">
+                            <div class="text-[10px] text-gray-500 font-mono">GRID FREQ</div>
+                            <div class="text-xs font-bold text-green-400 font-mono animate-pulse">49.98 Hz</div>
+                        </div>
+                        <div
+                            class="flex items-center gap-2 bg-green-900/20 px-2 py-1 rounded text-green-400 text-[10px] border border-green-900/50">
+                            <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                            LIVE
+                        </div>
+                    </div>
+                </div>
+
+                <!-- The Diagram -->
+                <div class="flex items-center justify-between relative px-2 md:px-6 py-2">
+
+                    <!-- 1. LEFT: SUPPLY (Generation) -->
+                    <div class="z-10 flex flex-col items-center gap-2 w-1/4">
+                        <div
+                            class="w-full bg-[#020617] border border-gray-800 rounded-lg p-3 text-center shadow-lg relative group">
+                            <div
+                                class="absolute -top-2 left-1/2 -translate-x-1/2 bg-gray-800 text-[9px] px-2 rounded text-gray-300">
+                                SOURCE</div>
+                            <i data-lucide="zap" class="w-5 h-5 text-orange-400 mx-auto mb-1"></i>
+                            <div class="text-[10px] text-gray-500 uppercase font-bold">Total Gen</div>
+                            <div class="text-lg font-bold text-white leading-none" id="flow-gen">--</div>
+                            <div class="text-[9px] text-gray-500 mt-1">Domestic Supply</div>
+                        </div>
+                    </div>
+
+                    <!-- ANIMATED CONNECTION 1 (Supply -> Grid) -->
+                    <div class="flex-1 h-[2px] bg-gray-800 relative mx-2">
+                        <svg class="absolute inset-0 w-full h-full overflow-visible">
+                            <!-- Moving Dash -->
+                            <line x1="0" y1="1" x2="100%" y2="1" stroke="#0ea5e9" stroke-width="2"
+                                stroke-dasharray="6,4" class="flow-path" />
+                            <!-- Arrow Head at end -->
+                            <polygon points="0,0 -6,-3 -6,3" fill="#0ea5e9" transform="translate(100%, 1)">
+                                <animateTransform attributeName="transform" type="translate" from="0,1" to="100%,1"
+                                    dur="1.5s" repeatCount="indefinite" />
+                            </polygon>
+                        </svg>
+                        <div
+                            class="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] text-blue-400 font-mono bg-[#020617] px-1">
+                            INFLOW</div>
+                    </div>
+
+                    <!-- 2. CENTER: THE GRID (Net Load) -->
+                    <div class="z-20 flex flex-col items-center w-1/3">
+                        <!-- Glowing Ring Container -->
+                        <div
+                            class="relative w-32 h-32 rounded-full border-4 border-gray-800 bg-[#0f172a] flex flex-col items-center justify-center shadow-[0_0_30px_rgba(14,165,233,0.15)]">
+                            <!-- Spinning Outer Ring (CSS Animation) -->
+                            <div class="absolute inset-0 rounded-full border-t-2 border-blue-500 opacity-50 animate-spin"
+                                style="animation-duration: 3s;"></div>
+
+                            <div class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1">NET DEMAND
+                            </div>
+                            <div class="text-2xl md:text-3xl font-bold text-white tracking-tighter" id="flow-load">--
+                            </div>
+                            <div class="text-[10px] text-blue-400 font-bold mt-1">GW</div>
+                            <div class="text-[9px] text-gray-500 mt-1">Domestic Consumption</div>
+                        </div>
+                    </div>
+
+                    <!-- ANIMATED CONNECTION 2 (Grid -> Export) -->
+                    <div class="flex-1 h-[2px] bg-gray-800 relative mx-2">
+                        <svg class="absolute inset-0 w-full h-full overflow-visible">
+                            <line x1="0" y1="1" x2="100%" y2="1" stroke="#64748b" stroke-width="2"
+                                stroke-dasharray="4,6" class="flow-path"
+                                style="animation-duration: 2s; opacity: 0.5;" />
+                        </svg>
+                        <div
+                            class="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] text-gray-500 font-mono bg-[#020617] px-1">
+                            OUTFLOW</div>
+                    </div>
+
+                    <!-- 3. RIGHT: EXPORT -->
+                    <div class="z-10 flex flex-col items-center gap-2 w-1/4">
+                        <div class="w-full bg-[#020617] border border-gray-800 rounded-lg p-3 text-center opacity-70">
+                            <div
+                                class="absolute -top-2 left-1/2 -translate-x-1/2 bg-gray-800 text-[9px] px-2 rounded text-gray-400">
+                                EXIT</div>
+                            <i data-lucide="share-2" class="w-5 h-5 text-gray-400 mx-auto mb-1"></i>
+                            <div class="text-[10px] text-gray-500 uppercase font-bold">Net Export</div>
+                            <div class="text-lg font-bold text-white leading-none" id="flow-export">--</div>
+                            <div class="text-[9px] text-gray-500 mt-1">To NP/BD/MM</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SVG Diagram -->
+            <div
+                class="relative h-[100px] flex items-center justify-between px-4 md:px-12 border-t border-gray-800 pt-2">
+
+                <!-- Node 1: Gen -->
+                <div class="z-10 text-center bg-[#020617] p-2 rounded-lg border border-gray-800">
+                    <i data-lucide="factory" class="w-5 h-5 text-orange-400 mx-auto mb-1"></i>
+                    <div class="text-[10px] text-gray-500">Generation</div>
+                    <div class="text-xs font-bold text-white" id="svg-gen">214 GW</div>
+                </div>
+
+                <!-- Wire 1 -->
+                <div class="flex-1 h-[2px] bg-gray-800 mx-2 relative overflow-hidden">
+                    <svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+                        <line x1="0" y1="1" x2="100%" y2="1" stroke="#0ea5e9" stroke-width="2" class="flow-path" />
+                    </svg>
+                </div>
+
+                <!-- Node 2: Grid -->
+                <div class="z-10 text-center">
+                    <div
+                        class="w-14 h-14 rounded-full bg-blue-500/10 border border-blue-500 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.2)] mx-auto mb-1">
+                        <span class="font-bold text-white text-sm">IN</span>
+                    </div>
+                    <div class="text-xs font-bold text-white" id="svg-load">Net Load</div>
+                </div>
+
+                <!-- Wire 2 -->
+                <div class="flex-1 h-[2px] bg-gray-800 mx-2 relative overflow-hidden">
+                    <svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+                        <line x1="0" y1="1" x2="100%" y2="1" stroke="#0ea5e9" stroke-width="2" class="flow-path"
+                            style="animation-duration: 1.2s" />
+                    </svg>
+                </div>
+
+                <!-- Node 3: Export -->
+                <div class="z-10 text-center bg-[#020617] p-2 rounded-lg border border-gray-800 opacity-60">
+                    <i data-lucide="home" class="w-5 h-5 text-gray-400 mx-auto mb-1"></i>
+                    <div class="text-[10px] text-gray-500">Export</div>
+                    <div class="text-xs font-bold text-gray-400" id="svg-export">1.2 GW</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW: INSIGHTS SECTION - FULL WIDTH -->
+        <div class="lg:col-span-12">
+            <div class="glass-panel rounded-2xl p-6">
+                <!-- Section Header -->
+                <div class="flex items-center justify-between mb-6 border-b border-gray-800 pb-4">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center">
+                            <i data-lucide="lightbulb" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-white">AI-Powered Insights</h2>
+                            <p class="text-xs text-gray-400">Real-time analysis of India's energy landscape</p>
+                        </div>
+                    </div>
+                    <div
+                        class="flex items-center gap-2 bg-purple-900/20 px-3 py-1.5 rounded-lg border border-purple-500/30">
+                        <span class="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
+                        <span class="text-xs text-purple-300 font-medium">Auto-Updated</span>
+                    </div>
+                </div>
+
+                <!-- Insights Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <!-- Insight 1: Peak Demand -->
+                    <div
+                        class="insight-card bg-gradient-to-br from-blue-900/20 to-blue-800/10 border border-blue-500/20 rounded-xl p-4 hover:border-blue-500/40 transition-all cursor-pointer">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                                <i data-lucide="trending-up" class="w-4 h-4 text-blue-400"></i>
+                            </div>
+                            <span class="text-[9px] text-blue-400 font-bold uppercase tracking-wider">Peak
+                                Analysis</span>
+                        </div>
+                        <h4 class="text-sm text-gray-300 mb-2">Peak Demand Window</h4>
+                        <div class="text-2xl font-bold text-white mb-1" id="insight-peak-time">18:00 - 22:00</div>
+                        <p class="text-xs text-gray-400" id="insight-peak-desc">Evening hours show 15% higher demand</p>
+                    </div>
+
+                    <!-- Insight 2: Renewable Performance -->
+                    <div
+                        class="insight-card bg-gradient-to-br from-green-900/20 to-green-800/10 border border-green-500/20 rounded-xl p-4 hover:border-green-500/40 transition-all cursor-pointer">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                                <i data-lucide="sun" class="w-4 h-4 text-green-400"></i>
+                            </div>
+                            <span class="text-[9px] text-green-400 font-bold uppercase tracking-wider">Green
+                                Energy</span>
+                        </div>
+                        <h4 class="text-sm text-gray-300 mb-2">Renewable Contribution</h4>
+                        <div class="text-2xl font-bold text-white mb-1" id="insight-renewable-val">--</div>
+                        <p class="text-xs text-gray-400" id="insight-renewable-desc">Solar leading at midday</p>
+                    </div>
+
+                    <!-- Insight 3: Carbon Trend -->
+                    <div
+                        class="insight-card bg-gradient-to-br from-orange-900/20 to-orange-800/10 border border-orange-500/20 rounded-xl p-4 hover:border-orange-500/40 transition-all cursor-pointer">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center">
+                                <i data-lucide="cloud" class="w-4 h-4 text-orange-400"></i>
+                            </div>
+                            <span class="text-[9px] text-orange-400 font-bold uppercase tracking-wider">Emissions</span>
+                        </div>
+                        <h4 class="text-sm text-gray-300 mb-2">Carbon Intensity Trend</h4>
+                        <div class="text-2xl font-bold text-white mb-1" id="insight-carbon-trend">↑ 3.2%</div>
+                        <p class="text-xs text-gray-400" id="insight-carbon-desc">Higher than yesterday</p>
+                    </div>
+
+                    <!-- Insight 4: Grid Efficiency -->
+                    <div
+                        class="insight-card bg-gradient-to-br from-purple-900/20 to-purple-800/10 border border-purple-500/20 rounded-xl p-4 hover:border-purple-500/40 transition-all cursor-pointer">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                                <i data-lucide="activity" class="w-4 h-4 text-purple-400"></i>
+                            </div>
+                            <span
+                                class="text-[9px] text-purple-400 font-bold uppercase tracking-wider">Efficiency</span>
+                        </div>
+                        <h4 class="text-sm text-gray-300 mb-2">Grid Stability Score</h4>
+                        <div class="text-2xl font-bold text-white mb-1" id="insight-stability">98.5%</div>
+                        <p class="text-xs text-gray-400">Frequency within ±0.2 Hz</p>
+                    </div>
+                </div>
+
+                <!-- Key Recommendations -->
+                <div class="bg-gradient-to-r from-cyan-900/10 to-blue-900/10 border border-cyan-500/20 rounded-xl p-5">
+                    <div class="flex items-start gap-3">
+                        <div
+                            class="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+                            <i data-lucide="info" class="w-4 h-4 text-cyan-400"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-sm font-bold text-white mb-2">Key Recommendations</h3>
+                            <ul class="space-y-2 text-xs text-gray-300" id="recommendations-list">
+                                <li class="flex items-start gap-2">
+                                    <span class="text-cyan-400 mt-0.5">•</span>
+                                    <span><strong>Peak Shaving:</strong> Consider load shifting during 18:00-22:00 to
+                                        reduce coal dependency</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-cyan-400 mt-0.5">•</span>
+                                    <span><strong>Solar Optimization:</strong> Current solar capacity utilization at
+                                        <span id="solar-util">--</span>% - potential for expansion</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-cyan-400 mt-0.5">•</span>
+                                    <span><strong>Carbon Target:</strong> Need <span id="carbon-reduction">--</span>%
+                                        reduction to meet 2030 goals</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    </div>
+
+    <!-- SCRIPT -->
+    <script>
+        // 1. Initialize Icons
+        lucide.createIcons();
+        document.getElementById('last-updated').innerText = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+        // 2. Constants & Data Engine
+        const COLORS = {
+            coal: '#78350f', solar: '#eab308', wind: '#0ea5e9',
+            hydro: '#1d4ed8', nuclear: '#22c55e', gas: '#94a3b8'
+        };
+
+        // Realistic Simulation Engine (Matches India's Grid Patterns)
+        function generateData(range) {
+            const count = range === '24H' ? 24 : (range === '30D' ? 30 : 60);
+            const labels = [];
+            const d = { coal: [], solar: [], wind: [], hydro: [], nuclear: [], gas: [] };
+            const now = new Date();
+
+            for (let i = 0; i < count; i++) {
+                const t = new Date(now);
+                if (range === '24H') t.setHours(t.getHours() - (count - 1 - i));
+                else if (range === '30D') t.setDate(t.getDate() - (count - 1 - i));
+                else t.setMonth(t.getMonth() - (count - 1 - i));
+
+                // Labels
+                if (range === '24H') labels.push(t.getHours() + ':00');
+                else if (range === '30D') labels.push(t.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }));
+                else labels.push(t.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
+
+                // Simulation Logic
+                const hour = t.getHours();
+                const month = t.getMonth();
+
+                // Solar: Bell curve (day) or Seasonal
+                let s = 0;
+                if (range === '24H') {
+                    if (hour >= 6 && hour <= 18) s = 45 * Math.sin(((hour - 6) * Math.PI) / 12);
+                } else {
+                    s = (month >= 5 && month <= 8) ? 20 : 35; // Lower in monsoon
+                }
+
+                // Wind: Higher in Monsoon
+                let w = (month >= 5 && month <= 8) ? 30 : 12;
+                if (range === '24H') w += (Math.random() * 5);
+
+                // Hydro:
+                let h = (month >= 6 && month <= 9) ? 25 : 15;
+
+                // Coal (Balancing):
+                let c = 160 - (s * 0.5 + w * 0.5);
+                c += (Math.random() * 10);
+
+                d.coal.push(c);
+                d.solar.push(s);
+                d.wind.push(w);
+                d.hydro.push(h);
+                d.nuclear.push(6);
+                d.gas.push(5);
+            }
+            return { labels, ...d };
+        }
+
+        // 3. Chart Instances
+        let mixChart = null;
+
+        // 4. Initialize Charts
+        function initCharts() {
+
+            // -- Mix Chart --
+            const ctxM = document.getElementById('mixChart').getContext('2d');
+            mixChart = new Chart(ctxM, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Solar', 'Wind', 'Hydro', 'Nuclear', 'Gas', 'Coal'],
+                    datasets: [{
+                        data: [1, 1, 1, 1, 1, 1],
+                        backgroundColor: Object.values(COLORS),
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    cutout: '75%',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // 5. Update Insights
+        function updateInsights(data, avg, totalGenAvg) {
+            const renewableAvg = avg.solar + avg.wind + avg.hydro;
+            const renewablePct = ((renewableAvg / totalGenAvg) * 100).toFixed(1);
+
+            // Update renewable insight
+            document.getElementById('insight-renewable-val').innerText = renewablePct + '% of total';
+
+            // Solar utilization (assuming 100GW installed capacity)
+            const solarUtil = ((avg.solar / 100) * 100).toFixed(1);
+            document.getElementById('solar-util').innerText = solarUtil;
+
+            // Carbon reduction needed (assuming target of 450 gCO2/kWh by 2030)
+            const currentIntensity = parseInt(document.getElementById('val-intensity').innerText);
+            const targetIntensity = 450;
+            const reductionNeeded = (((currentIntensity - targetIntensity) / currentIntensity) * 100).toFixed(1);
+            document.getElementById('carbon-reduction').innerText = reductionNeeded;
+
+            // Update carbon trend (simulated)
+            const trend = (Math.random() * 10 - 5).toFixed(1);
+            const trendSymbol = trend > 0 ? '↑' : '↓';
+            document.getElementById('insight-carbon-trend').innerText = trendSymbol + ' ' + Math.abs(trend) + '%';
+            document.getElementById('insight-carbon-desc').innerText = trend > 0 ? 'Higher than yesterday' : 'Lower than yesterday';
+        }
+
+        // 6. Update Logic
+        function updateDashboard(range) {
+            // 1. Button Styles
+            ['24H', '30D', '5Y'].forEach(id => {
+                const btn = document.getElementById('btn-' + id);
+                if (id === range) {
+                    btn.className = "px-4 py-2 rounded-lg text-xs font-bold transition-all btn-active";
+                } else {
+                    btn.className = "px-4 py-2 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition-all";
+                }
+            });
+
+            // 2. Get Data
+            const data = generateData(range);
+
+            // 3. Calculate total generation at each time point, then average
+            const count = data.coal.length;
+            let totalGenSum = 0;
+
+            for (let i = 0; i < count; i++) {
+                totalGenSum += data.coal[i] + data.solar[i] + data.wind[i] + data.hydro[i] + data.nuclear[i] + data.gas[i];
+            }
+
+            const totalGenAvg = totalGenSum / count;
+
+            // Now calculate individual averages for display
+            const avg = {
+                coal: data.coal.reduce((a, b) => a + b, 0) / count,
+                solar: data.solar.reduce((a, b) => a + b, 0) / count,
+                wind: data.wind.reduce((a, b) => a + b, 0) / count,
+                hydro: data.hydro.reduce((a, b) => a + b, 0) / count,
+                nuclear: data.nuclear.reduce((a, b) => a + b, 0) / count,
+                gas: data.gas.reduce((a, b) => a + b, 0) / count
+            };
+
+            // Calculate totals (for charts that need absolute values)
+            const t = {
+                coal: avg.coal * count,
+                solar: avg.solar * count,
+                wind: avg.wind * count,
+                hydro: avg.hydro * count,
+                nuclear: avg.nuclear * count,
+                gas: avg.gas * count
+            };
+
+            // 5. MATH FOR FLOW DIAGRAM
+            const exportVal = totalGenAvg * 0.015;
+            const netLoadVal = totalGenAvg - exportVal;
+
+            // Update Flow Numbers
+            document.getElementById('flow-gen').innerText = totalGenAvg.toFixed(1) + " GW";
+            document.getElementById('flow-load').innerText = netLoadVal.toFixed(1);
+            document.getElementById('flow-export').innerText = exportVal.toFixed(2) + " GW";
+
+            // 6. Update Mix Chart (use totals for proper proportions)
+            mixChart.data.datasets[0].data = [t.solar, t.wind, t.hydro, t.nuclear, t.gas, t.coal];
+            mixChart.update();
+
+            // 7. Update Metrics Cards
+            const fossilAvg = avg.coal + avg.gas;
+            const lowCarbonAvg = avg.solar + avg.wind + avg.hydro + avg.nuclear;
+            const renewableAvg = avg.solar + avg.wind + avg.hydro;
+
+            const fossilPct = Math.round((fossilAvg / totalGenAvg) * 100);
+            const lowCarbonPct = ((lowCarbonAvg / totalGenAvg) * 100).toFixed(1);
+            const renewablePct = ((renewableAvg / totalGenAvg) * 100).toFixed(1);
+
+            document.getElementById('center-val').innerText = fossilPct + '%';
+            document.getElementById('val-lowcarbon').innerText = lowCarbonPct + '%';
+            document.getElementById('val-renewable').innerText = renewablePct + '%';
+
+            // 8. Intensity Calc & Animation
+            const totalSum = totalGenAvg * count;
+            const emissions = (t.coal * 820) + (t.gas * 490) + ((t.solar + t.wind + t.hydro + t.nuclear) * 12);
+            const intensity = Math.round(emissions / totalSum);
+            document.getElementById('val-intensity').innerText = intensity;
+            const barPct = Math.min(100, (intensity / 900) * 100);
+            document.getElementById('bar-intensity').style.width = barPct + '%';
+
+            // 9. Update Bottom SVG Diagram
+            document.getElementById('svg-gen').innerText = totalGenAvg.toFixed(1) + " GW";
+            document.getElementById('svg-load').innerText = netLoadVal.toFixed(1) + " GW";
+            document.getElementById('svg-export').innerText = exportVal.toFixed(2) + " GW";
+
+            // 10. Update Insights Section
+            updateInsights(data, avg, totalGenAvg);
+
+            // Re-initialize icons after dynamic content update
+            lucide.createIcons();
+        }
+
+        // 7. Run
+        initCharts();
+        updateDashboard('24H');
+
+    </script>
+</body>
+
+</html>
