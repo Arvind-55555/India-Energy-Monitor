@@ -2,9 +2,9 @@
 
 > A high-fidelity, real-time visualization of India's electricity grid, featuring flow-tracing animations, carbon intensity tracking, and generation mix analysis.
 
-![Dashboard Preview](https://via.placeholder.com/1200x600/0f172a/38bdf8?text=India+Energy+Dashboard+Preview)
+![Dashboard Preview]([https://arvind-55555.github.io/India-Energy-Monitor/])
 
-## ⚡ Overview
+## Overview
 
 This project is a web-based dashboard designed to visualize the **Carbon Intensity** and **Electricity Mix** of the Indian Grid (Zone: IN). It mimics professional control room interfaces using a "Glassmorphism" design system.
 
