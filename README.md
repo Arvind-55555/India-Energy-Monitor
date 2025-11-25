@@ -95,7 +95,3 @@ const imports = apiData.powerImportTotal;
 const exports = apiData.powerExportTotal;
 const netLoad = totalGen + imports - exports;
 ```
-###  References
-**Data Baselines:**
-- **Grid-India (POSOCO)** - Daily Load Reports.
-- **Data.gov.in** - National Power Portal.
